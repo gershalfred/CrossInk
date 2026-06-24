@@ -4,6 +4,7 @@
 
 ### Fixed
 - Progressive JPEG EPUB covers now render smoothly in generated BMP cover assets. The cover/thumbnail BMP path already detected progressive JPEGs and forced the required 1/8 JPEGDEC decode, but it still upscaled that reduced grid with blocky sampling. `JpegToBmpConverter` now uses a progressive-only bilinear smoothing pass before dithering when those covers are enlarged for home thumbnails and sleep covers, while leaving non-upscale cases on the existing scaler.
+- EPUB grayscale page turns on X3 now use the display's grayscale-aware base and settle path, reducing the moment where new text first appears too dark before the anti-aliased overlay finishes.
 
 ## [v1.3.3] - 2026-06-13
 

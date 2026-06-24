@@ -47,6 +47,12 @@ class HalDisplay {
   // Access to frame buffer
   uint8_t* getFrameBuffer() const;
 
+  // X3 grayscale preconditioning settle pass (no-op on X4).
+  void preconditionGrayscale();
+  void preconditionGrayscale(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
+  // Display the framebuffer as the base frame for a grayscale overlay.
+  void displayGrayscaleBase(RefreshMode fallback = HALF_REFRESH, bool turnOffScreen = false);
+
   void copyGrayscaleBuffers(const uint8_t* lsbBuffer, const uint8_t* msbBuffer);
   void copyGrayscaleLsbBuffers(const uint8_t* lsbBuffer);
   void copyGrayscaleMsbBuffers(const uint8_t* msbBuffer);
