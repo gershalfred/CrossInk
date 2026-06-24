@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- OPDS book downloads now use a smaller 2 KB transfer chunk on CrossInk's `esp_http_client` path, reducing per-read stalls that could make downloads feel slower than CrossPoint on Xteink hardware.
+
 ## [v1.3.3] - 2026-06-13
 
 ### Added
