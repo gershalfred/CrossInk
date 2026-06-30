@@ -215,6 +215,7 @@ class CrossPointSettings {
     JOIN_NETWORK = 19,
     CREATE_HOTSPOT = 20,
     CREATE_CLIPPING = 21,
+    QUICK_LOCK = 22,
     SHORT_PWRBTN_COUNT
   };
 
