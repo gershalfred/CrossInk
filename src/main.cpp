@@ -240,6 +240,9 @@ unsigned long t2 = 0;
 // power button release does not also trigger a short-press action (e.g. sleep).
 static bool screenshotComboHandled = false;
 
+// Runtime-only pocket lock. This intentionally does not persist across reboot or sleep.
+static bool quickButtonsLocked = false;
+
 const char* resetReasonName(const esp_reset_reason_t reason) {
   switch (reason) {
     case ESP_RST_POWERON:
@@ -473,6 +476,18 @@ bool handleGlobalPowerButtonAction(const CrossPointSettings::SHORT_PWRBTN action
     case CrossPointSettings::SHORT_PWRBTN::SLEEP:
       enterDeepSleep();
       return true;
+    case CrossPointSettings::SHORT_PWRBTN::QUICK_LOCK: {
+      quickButtonsLocked = !quickButtonsLocked;
+      LOG_DBG("MAIN", "Quick button lock %s", quickButtonsLocked ? "enabled" : "disabled");
+      {
+        RenderLock lock;
+        GUI.drawPopup(renderer, quickButtonsLocked ? tr(STR_QUICK_LOCKED) : tr(STR_QUICK_UNLOCKED));
+        renderer.displayBuffer(HalDisplay::FAST_REFRESH);
+      }
+      delay(650);
+      activityManager.requestUpdateAndWait();
+      return true;
+    }
     case CrossPointSettings::SHORT_PWRBTN::FORCE_REFRESH: {
       LOG_DBG("MAIN", "Manual screen refresh triggered");
       RenderLock lock;
@@ -969,6 +984,15 @@ void loop() {
 
   if (millis() >= allowSleepAt && handleGlobalPowerButtonAction(getPowerButtonAction())) {
     lastActivityTime = millis();
+    return;
+  }
+
+  if (quickButtonsLocked) {
+    // Keep the current screen visible and the device awake, but swallow normal
+    // activity input. Power-button Quick Lock still runs above so the same
+    // configured top-button gesture can unlock.
+    lastActivityTime = millis();
+    powerManager.setPowerSaving(false);
     return;
   }
 
