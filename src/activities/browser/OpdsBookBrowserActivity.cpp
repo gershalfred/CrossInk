@@ -248,15 +248,89 @@ void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
   clearEntries();
   std::string url = (path.find("http") == 0) ? path : UrlUtils::buildUrl(server.url, path);
   LOG_DBG("OPDS", "Fetching: %s", url.c_str());
+  // Spool the feed to SD and parse it only after the connection is closed.
+  // Parsing while the socket is open holds the whole TLS session (~35KB of
+  // heap with 16KB SSL buffers) while the parser allocates entry strings
+  // into what remains, so large feeds over HTTPS can run out of memory
+  // mid-transfer. Downloading first, then constructing the parser and
+  // reading from SD, keeps the transfer phase free of parse allocations.
+  static constexpr const char* FEED_TMP_PATH = "/.crosspoint/opds-feed.tmp";
+  bool cancelRequested = false;
+  auto pollCancel = [this, &cancelRequested] {
+    if (cancelRequested) {
+      return true;
+    }
+    mappedInput.update();
+    if (mappedInput.isPressed(MappedInputManager::Button::Back) ||
+        mappedInput.wasPressed(MappedInputManager::Button::Back) ||
+        mappedInput.wasReleased(MappedInputManager::Button::Back)) {
+      cancelRequested = true;
+    }
+    return cancelRequested;
+  };
+  HttpDownloader::DownloadOptions feedOptions;
+  feedOptions.shouldCancel = pollCancel;
+  feedOptions.bufferSize = OPDS_DOWNLOAD_BUFFER_SIZE;
+
+  const HttpDownloader::DownloadError feedErr = HttpDownloader::downloadToFile(
+      url, FEED_TMP_PATH, nullptr, &cancelRequested, server.username, server.password, feedOptions);
+  if (feedErr == HttpDownloader::ABORTED) {
+    // User-initiated cancel: go back instead of showing an error screen,
+    // matching what loop() does for Back while LOADING. downloadToFile
+    // already removed the temp file.
+    LOG_DBG("OPDS", "Feed fetch cancelled");
+    mappedInput.suppressNextBackRelease();
+    navigateBack();
+    return;
+  }
+  if (feedErr != HttpDownloader::OK) {
+    LOG_ERR("OPDS", "Feed download failed: %d", static_cast<int>(feedErr));
+    state = BrowserState::ERROR;
+    errorMessage = tr(STR_FETCH_FEED_FAILED);
+    requestUpdate();
+    return;
+  }
+
+  FsFile feedFile;
+  if (!Storage.openFileForRead("OPDS", FEED_TMP_PATH, feedFile)) {
+    LOG_ERR("OPDS", "Failed to open spooled feed %s", FEED_TMP_PATH);
+    Storage.remove(FEED_TMP_PATH);
+    state = BrowserState::ERROR;
+    errorMessage = tr(STR_FETCH_FEED_FAILED);
+    requestUpdate();
+    return;
+  }
+
+  auto buffer = makeUniqueNoThrow<uint8_t[]>(OPDS_DOWNLOAD_BUFFER_SIZE);
+  if (!buffer) {
+    LOG_ERR("OPDS", "OOM: feed read buffer (%u free, %u max alloc)", ESP.getFreeHeap(), ESP.getMaxAllocHeap());
+    feedFile.close();
+    Storage.remove(FEED_TMP_PATH);
+    state = BrowserState::ERROR;
+    errorMessage = tr(STR_MEMORY_ERROR);
+    requestUpdate();
+    return;
+  }
+
   OpdsParser parser(entries.get(), MAX_OPDS_FEED_ENTRIES);
+  bool readOk = true;
   {
     OpdsParserStream stream{parser};
-    if (!HttpDownloader::fetchUrl(url, stream, server.username, server.password)) {
-      state = BrowserState::ERROR;
-      errorMessage = tr(STR_FETCH_FEED_FAILED);
-      requestUpdate();
-      return;
+    while (parser) {
+      const int bytesRead = feedFile.read(buffer.get(), OPDS_DOWNLOAD_BUFFER_SIZE);
+      if (bytesRead < 0) readOk = false;
+      if (bytesRead <= 0) break;
+      stream.write(buffer.get(), static_cast<size_t>(bytesRead));
     }
+  }
+  feedFile.close();
+  Storage.remove(FEED_TMP_PATH);
+  if (!readOk) {
+    LOG_ERR("OPDS", "Failed to read spooled feed %s", FEED_TMP_PATH);
+    state = BrowserState::ERROR;
+    errorMessage = tr(STR_FETCH_FEED_FAILED);
+    requestUpdate();
+    return;
   }
 
   if (!parser) {
