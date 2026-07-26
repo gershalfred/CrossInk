@@ -7,6 +7,9 @@
 #include <OpdsStream.h>
 #include <WiFi.h>
 
+#include <algorithm>
+#include <cstdint>
+
 #include "MappedInputManager.h"
 #include "SdCardFontSystem.h"
 #include "SilentRestart.h"
@@ -24,6 +27,8 @@ constexpr int PAGE_ITEMS = 23;
 constexpr size_t OPDS_BROWSER_ENTRY_CAPACITY = MAX_OPDS_FEED_ENTRIES + 2;
 constexpr size_t OPDS_CATALOG_DOWNLOAD_BUFFER_SIZE = 512;
 constexpr size_t OPDS_DOWNLOAD_BUFFER_SIZE = 2048;
+constexpr uint8_t OPDS_DOWNLOAD_PROGRESS_STEP_PERCENT = 25;
+constexpr char FEED_TMP_PATH[] = "/.crosspoint/opds_feed.tmp";
 
 std::string buildBookFilenameBase(const OpdsEntry& book, const OpdsFilenameFormat format) {
   if (book.author.empty()) return book.title;
@@ -427,6 +432,7 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
   state = BrowserState::DOWNLOADING;
   statusMessage = book.title;
   downloadProgress = downloadTotal = 0;
+  lastDownloadRenderedPercent = 0;
   requestUpdate(true);
 
   // Build full download URL relative to the current feed, not the root server URL
@@ -466,7 +472,14 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
       [this](const size_t downloaded, const size_t total) {
         downloadProgress = downloaded;
         downloadTotal = total;
-        requestUpdate(true);
+        if (total == 0) return;
+
+        const auto percent = static_cast<uint8_t>(
+            std::min<uint64_t>(100, (static_cast<uint64_t>(downloaded) * 100) / static_cast<uint64_t>(total)));
+        if (percent == 100 || percent >= lastDownloadRenderedPercent + OPDS_DOWNLOAD_PROGRESS_STEP_PERCENT) {
+          lastDownloadRenderedPercent = percent;
+          requestUpdate(true);
+        }
       },
       &cancelRequested, server.username, server.password, downloadOptions);
 
