@@ -34,7 +34,10 @@ size_t OpdsParser::write(const uint8_t* xmlData, const size_t length) {
 
   const char* currentPos = reinterpret_cast<const char*>(xmlData);
   size_t remaining = length;
-  constexpr size_t chunkSize = 1024;
+  // Keep Expat's contiguous allocation small on ESP32-C3. Catalog feeds are
+  // spooled to SD before parsing, so smaller chunks cost little while making
+  // parsing resilient after TLS-related heap fragmentation.
+  constexpr size_t chunkSize = 256;
 
   while (remaining > 0) {
     const size_t toRead = remaining < chunkSize ? remaining : chunkSize;

@@ -22,6 +22,7 @@
 namespace {
 constexpr int PAGE_ITEMS = 23;
 constexpr size_t OPDS_BROWSER_ENTRY_CAPACITY = MAX_OPDS_FEED_ENTRIES + 2;
+constexpr size_t OPDS_CATALOG_DOWNLOAD_BUFFER_SIZE = 512;
 constexpr size_t OPDS_DOWNLOAD_BUFFER_SIZE = 2048;
 
 std::string buildBookFilenameBase(const OpdsEntry& book, const OpdsFilenameFormat format) {
@@ -231,13 +232,6 @@ void OpdsBookBrowserActivity::showLoadingBeforeFetch() {
 }
 
 void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
-  if (!ensureEntryBuffer()) {
-    state = BrowserState::ERROR;
-    errorMessage = tr(STR_MEMORY_ERROR);
-    requestUpdate();
-    return;
-  }
-
   if (server.url.empty()) {
     state = BrowserState::ERROR;
     errorMessage = tr(STR_NO_SERVER_URL);
@@ -246,6 +240,11 @@ void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
   }
 
   clearEntries();
+  // Parsing the previous feed fragments the heap around this fixed array.
+  // Destroy it before opening the next TLS connection, then allocate a fresh
+  // entry buffer only after the network client and SSL buffers are gone.
+  entries.reset();
+  std::string{}.swap(searchTemplate);
   std::string url = (path.find("http") == 0) ? path : UrlUtils::buildUrl(server.url, path);
   LOG_DBG("OPDS", "Fetching: %s", url.c_str());
   // Spool the feed to SD and parse it only after the connection is closed.
@@ -270,7 +269,7 @@ void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
   };
   HttpDownloader::DownloadOptions feedOptions;
   feedOptions.shouldCancel = pollCancel;
-  feedOptions.bufferSize = OPDS_DOWNLOAD_BUFFER_SIZE;
+  feedOptions.bufferSize = OPDS_CATALOG_DOWNLOAD_BUFFER_SIZE;
 
   const HttpDownloader::DownloadError feedErr = HttpDownloader::downloadToFile(
       url, FEED_TMP_PATH, nullptr, &cancelRequested, server.username, server.password, feedOptions);
@@ -287,6 +286,14 @@ void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
     LOG_ERR("OPDS", "Feed download failed: %d", static_cast<int>(feedErr));
     state = BrowserState::ERROR;
     errorMessage = tr(STR_FETCH_FEED_FAILED);
+    requestUpdate();
+    return;
+  }
+
+  if (!ensureEntryBuffer()) {
+    Storage.remove(FEED_TMP_PATH);
+    state = BrowserState::ERROR;
+    errorMessage = tr(STR_MEMORY_ERROR);
     requestUpdate();
     return;
   }
