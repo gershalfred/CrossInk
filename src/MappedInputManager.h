@@ -28,6 +28,9 @@ class MappedInputManager {
   void suppressNextConfirmRelease() { suppressConfirmRelease = true; }
   void suppressNextPowerRelease() { suppressPowerRelease = true; }
   void suppressNextPowerConfirmRelease() { suppressPowerConfirmRelease = true; }
+  // Queue one semantic release for the active activity. Used by global
+  // shortcuts such as the configurable Power-button chord.
+  void injectRelease(Button button) { injectedReleased[static_cast<size_t>(button)] = true; }
   bool wasPressed(Button button) const;
   bool wasReleased(Button button) const;
   bool isPressed(Button button) const;
@@ -55,6 +58,7 @@ class MappedInputManager {
   mutable bool suppressConfirmRelease = false;
   mutable bool suppressPowerRelease = false;
   mutable bool suppressPowerConfirmRelease = false;
+  mutable std::array<bool, BUTTON_COUNT> injectedReleased{};
 #ifdef SIMULATOR
   std::array<bool, BUTTON_COUNT> simulatorPressed{};
   std::array<bool, BUTTON_COUNT> simulatorReleased{};

@@ -228,7 +228,17 @@ class CrossPointSettings {
   };
 
   // Power + right-side button chord actions. Values are persisted; append only.
-  enum POWER_CHORD_ACTION { CHORD_SCREENSHOT = 0, CHORD_QUICK_LOCK = 1, CHORD_DISABLED = 2, POWER_CHORD_ACTION_COUNT };
+  enum POWER_CHORD_ACTION {
+    CHORD_SCREENSHOT = 0,
+    CHORD_QUICK_LOCK = 1,
+    CHORD_DISABLED = 2,
+    CHORD_NEXT_PAGE = 3,
+    CHORD_PREVIOUS_PAGE = 4,
+    CHORD_SLEEP = 5,
+    CHORD_POWER_OFF = 6,
+    CHORD_OPDS = 7,
+    POWER_CHORD_ACTION_COUNT
+  };
 
   // Hide battery percentage
   enum HIDE_BATTERY_PERCENTAGE { HIDE_NEVER = 0, HIDE_READER = 1, HIDE_ALWAYS = 2, HIDE_BATTERY_PERCENTAGE_COUNT };
