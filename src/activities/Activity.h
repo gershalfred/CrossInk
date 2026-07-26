@@ -48,6 +48,7 @@ class Activity {
   virtual bool skipLoopDelay() { return false; }
   virtual bool preventAutoSleep() { return false; }
   virtual bool isReaderActivity() const { return false; }
+  virtual void onInputLockChanged(bool) {}
   virtual bool allowPowerAsConfirmInReaderMode() const { return false; }
   virtual bool canSnapshotForSleepOverlay() const { return false; }
   virtual std::string getCurrentBookPath() const { return {}; }

@@ -303,6 +303,12 @@ bool ActivityManager::isReaderActivity() const {
                      [](const auto& activity) { return activity && activity->isReaderActivity(); });
 }
 
+void ActivityManager::notifyInputLockChanged(const bool locked) {
+  if (currentActivity) {
+    currentActivity->onInputLockChanged(locked);
+  }
+}
+
 bool ActivityManager::canSnapshotForSleepOverlay() const {
   return currentActivity && currentActivity->canSnapshotForSleepOverlay();
 }

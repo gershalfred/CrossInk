@@ -245,6 +245,7 @@ class EpubReaderActivity final : public Activity {
   void render(RenderLock&& lock) override;
   bool preventAutoSleep() override { return automaticPageTurnActive; }
   bool isReaderActivity() const override { return true; }
+  void onInputLockChanged(bool locked) override;
   bool canSnapshotForSleepOverlay() const override { return true; }
   std::string getCurrentBookPath() const override { return epub ? epub->getPath() : std::string{}; }
   void setAutoPageTurnIntervalSeconds(uint16_t seconds);

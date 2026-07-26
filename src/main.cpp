@@ -88,6 +88,7 @@ inline esp_sleep_wakeup_cause_t esp_sleep_get_wakeup_cause() { return ESP_SLEEP_
 #endif
 #include "images/LoadingIcon.h"
 #include "util/ButtonNavigator.h"
+#include "util/QuickLockState.h"
 #include "util/ScreenshotUtil.h"
 
 MappedInputManager mappedInputManager(gpio);
@@ -241,7 +242,7 @@ unsigned long t2 = 0;
 static bool screenshotComboHandled = false;
 
 // Runtime-only pocket lock. This intentionally does not persist across reboot or sleep.
-static bool quickButtonsLocked = false;
+static QuickLockState quickLockState;
 
 const char* resetReasonName(const esp_reset_reason_t reason) {
   switch (reason) {
@@ -471,21 +472,32 @@ CrossPointSettings::SHORT_PWRBTN getPowerButtonAction() {
   return action;
 }
 
+void toggleQuickButtonLock() {
+  const auto transition = quickLockState.toggle();
+  const bool locked = quickLockState.isLocked();
+  if (transition == QuickLockState::Transition::PauseReading) {
+    activityManager.notifyInputLockChanged(true);
+  }
+  LOG_DBG("MAIN", "Quick button lock %s", locked ? "enabled" : "disabled");
+  {
+    RenderLock lock;
+    GUI.drawPopup(renderer, locked ? tr(STR_QUICK_LOCKED) : tr(STR_QUICK_UNLOCKED));
+    renderer.displayBuffer(HalDisplay::FAST_REFRESH);
+  }
+  delay(650);
+  activityManager.requestUpdateAndWait();
+  if (transition == QuickLockState::Transition::ResumeReading) {
+    activityManager.notifyInputLockChanged(false);
+  }
+}
+
 bool handleGlobalPowerButtonAction(const CrossPointSettings::SHORT_PWRBTN action) {
   switch (action) {
     case CrossPointSettings::SHORT_PWRBTN::SLEEP:
       enterDeepSleep();
       return true;
     case CrossPointSettings::SHORT_PWRBTN::QUICK_LOCK: {
-      quickButtonsLocked = !quickButtonsLocked;
-      LOG_DBG("MAIN", "Quick button lock %s", quickButtonsLocked ? "enabled" : "disabled");
-      {
-        RenderLock lock;
-        GUI.drawPopup(renderer, quickButtonsLocked ? tr(STR_QUICK_LOCKED) : tr(STR_QUICK_UNLOCKED));
-        renderer.displayBuffer(HalDisplay::FAST_REFRESH);
-      }
-      delay(650);
-      activityManager.requestUpdateAndWait();
+      toggleQuickButtonLock();
       return true;
     }
     case CrossPointSettings::SHORT_PWRBTN::FORCE_REFRESH: {
@@ -939,15 +951,26 @@ void loop() {
 
   static bool screenshotButtonsReleased = true;
   static bool screenshotComboActive = false;
-  if (gpio.isPressed(HalGPIO::BTN_POWER) && gpio.isPressed(HalGPIO::BTN_DOWN)) {
+  const auto powerChordAction = static_cast<CrossPointSettings::POWER_CHORD_ACTION>(SETTINGS.powerChordAction);
+  if (powerChordAction != CrossPointSettings::CHORD_DISABLED && gpio.isPressed(HalGPIO::BTN_POWER) &&
+      gpio.isPressed(HalGPIO::BTN_DOWN)) {
     screenshotComboActive = true;
     if (screenshotButtonsReleased) {
       screenshotButtonsReleased = false;
       screenshotComboHandled = true;
       mappedInputManager.suppressNextPowerConfirmRelease();
-      {
-        RenderLock lock;
-        ScreenshotUtil::takeScreenshot(renderer);
+      switch (powerChordAction) {
+        case CrossPointSettings::CHORD_SCREENSHOT: {
+          RenderLock lock;
+          ScreenshotUtil::takeScreenshot(renderer);
+          break;
+        }
+        case CrossPointSettings::CHORD_QUICK_LOCK:
+          toggleQuickButtonLock();
+          break;
+        case CrossPointSettings::CHORD_DISABLED:
+        case CrossPointSettings::POWER_CHORD_ACTION_COUNT:
+          break;
       }
     }
     return;
@@ -987,7 +1010,7 @@ void loop() {
     return;
   }
 
-  if (quickButtonsLocked) {
+  if (quickLockState.isLocked()) {
     // Keep the current screen visible and the device awake, but swallow normal
     // activity input. Power-button Quick Lock still runs above so the same
     // configured top-button gesture can unlock.

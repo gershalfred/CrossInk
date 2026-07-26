@@ -227,6 +227,9 @@ class CrossPointSettings {
     SHORT_PWRBTN_COUNT
   };
 
+  // Power + right-side button chord actions. Values are persisted; append only.
+  enum POWER_CHORD_ACTION { CHORD_SCREENSHOT = 0, CHORD_QUICK_LOCK = 1, CHORD_DISABLED = 2, POWER_CHORD_ACTION_COUNT };
+
   // Hide battery percentage
   enum HIDE_BATTERY_PERCENTAGE { HIDE_NEVER = 0, HIDE_READER = 1, HIDE_ALWAYS = 2, HIDE_BATTERY_PERCENTAGE_COUNT };
 
@@ -343,6 +346,8 @@ class CrossPointSettings {
   uint8_t shortPwrBtn = IGNORE;
   // Long power button action behaviour
   uint8_t longPwrBtn = SLEEP;
+  // Preserve the historical hard-coded Screenshot chord behavior by default.
+  uint8_t powerChordAction = CHORD_SCREENSHOT;
   // EPUB reading orientation settings
   // 0 = portrait (default), 1 = landscape clockwise, 2 = inverted, 3 = landscape counter-clockwise
   uint8_t orientation = PORTRAIT;

@@ -428,6 +428,11 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
                                 CrossPointSettings::FILE_BROWSER,
                                 CrossPointSettings::CREATE_CLIPPING,
                                 CrossPointSettings::QUICK_LOCK}));
+    add(SettingInfo::Enum(StrId::STR_POWER_BUTTON_CHORD, &CrossPointSettings::powerChordAction,
+                          {StrId::STR_SCREENSHOT_BUTTON, StrId::STR_QUICK_LOCK, StrId::STR_DISABLED},
+                          "powerChordAction", StrId::STR_CAT_CONTROLS)
+            .withEnumRawValues({CrossPointSettings::CHORD_SCREENSHOT, CrossPointSettings::CHORD_QUICK_LOCK,
+                                CrossPointSettings::CHORD_DISABLED}));
     add(SettingInfo::Enum(StrId::STR_LONG_PRESS_ACTION, &CrossPointSettings::longPwrBtn,
                           {StrId::STR_IGNORE,
                            StrId::STR_SLEEP,
