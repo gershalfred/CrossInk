@@ -237,6 +237,7 @@ class CrossPointSettings {
     CHORD_SLEEP = 5,
     CHORD_POWER_OFF = 6,
     CHORD_OPDS = 7,
+    CHORD_KOREADER_SYNC = 8,
     POWER_CHORD_ACTION_COUNT
   };
 

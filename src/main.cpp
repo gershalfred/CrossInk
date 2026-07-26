@@ -1011,6 +1011,9 @@ void loop() {
         case CrossPointSettings::CHORD_OPDS:
           activityManager.goToBrowser();
           break;
+        case CrossPointSettings::CHORD_KOREADER_SYNC:
+          startGlobalSyncProgress();
+          break;
         case CrossPointSettings::CHORD_DISABLED:
         case CrossPointSettings::POWER_CHORD_ACTION_COUNT:
           break;

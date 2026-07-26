@@ -430,13 +430,14 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
                                 CrossPointSettings::QUICK_LOCK}));
     add(SettingInfo::Enum(
             StrId::STR_POWER_BUTTON_CHORD, &CrossPointSettings::powerChordAction,
-            {StrId::STR_SCREENSHOT_BUTTON, StrId::STR_QUICK_LOCK, StrId::STR_NEXT_PAGE, StrId::STR_PREV_PAGE,
-             StrId::STR_SLEEP, StrId::STR_POWER_OFF, StrId::STR_OPDS_BROWSER, StrId::STR_DISABLED},
+            {StrId::STR_QUICK_LOCK, StrId::STR_SLEEP, StrId::STR_POWER_OFF, StrId::STR_NEXT_PAGE, StrId::STR_PREV_PAGE,
+             StrId::STR_SCREENSHOT_BUTTON, StrId::STR_OPDS_BROWSER, StrId::STR_KOREADER_SYNC, StrId::STR_DISABLED},
             "powerChordAction", StrId::STR_CAT_CONTROLS)
-            .withEnumRawValues({CrossPointSettings::CHORD_SCREENSHOT, CrossPointSettings::CHORD_QUICK_LOCK,
-                                CrossPointSettings::CHORD_NEXT_PAGE, CrossPointSettings::CHORD_PREVIOUS_PAGE,
-                                CrossPointSettings::CHORD_SLEEP, CrossPointSettings::CHORD_POWER_OFF,
-                                CrossPointSettings::CHORD_OPDS, CrossPointSettings::CHORD_DISABLED}));
+            .withEnumRawValues({CrossPointSettings::CHORD_QUICK_LOCK, CrossPointSettings::CHORD_SLEEP,
+                                CrossPointSettings::CHORD_POWER_OFF, CrossPointSettings::CHORD_NEXT_PAGE,
+                                CrossPointSettings::CHORD_PREVIOUS_PAGE, CrossPointSettings::CHORD_SCREENSHOT,
+                                CrossPointSettings::CHORD_OPDS, CrossPointSettings::CHORD_KOREADER_SYNC,
+                                CrossPointSettings::CHORD_DISABLED}));
     add(SettingInfo::Enum(StrId::STR_LONG_PRESS_ACTION, &CrossPointSettings::longPwrBtn,
                           {StrId::STR_IGNORE,
                            StrId::STR_SLEEP,
@@ -845,8 +846,8 @@ inline std::vector<SettingInfo> buildControlsPowerSettingsList(const std::vector
   std::vector<SettingInfo> settings;
   settings.reserve(4);
   addSettingByName(settings, allSettings, StrId::STR_SHORT_PWR_BTN);
-  addSettingByName(settings, allSettings, StrId::STR_POWER_BUTTON_CHORD);
   addSettingByName(settings, allSettings, StrId::STR_LONG_PRESS_ACTION);
+  addSettingByName(settings, allSettings, StrId::STR_POWER_BUTTON_CHORD);
   if (SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::FOOTNOTES ||
       SETTINGS.longPwrBtn == CrossPointSettings::SHORT_PWRBTN::FOOTNOTES ||
       SETTINGS.longPressMenuAction == CrossPointSettings::LONG_PRESS_MENU_ACTION::LONG_MENU_FOOTNOTES ||
