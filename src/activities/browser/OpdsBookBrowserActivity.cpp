@@ -436,6 +436,14 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
       "/" + StringUtils::sanitizeFilename(buildBookFilenameBase(book, server.filenameFormat)) + ".epub";
   LOG_DBG("OPDS", "Downloading: %s -> %s", downloadUrl.c_str(), filename.c_str());
 
+  // The selected book data is now copied into downloadUrl, filename, and
+  // statusMessage. Release the catalog before opening another TLS connection;
+  // keeping up to 50 entries of titles, authors, IDs, and URLs alive here can
+  // leave too little contiguous heap for an EPUB download on ESP32-C3.
+  clearEntries();
+  entries.reset();
+  std::string{}.swap(searchTemplate);
+
   bool cancelRequested = false;
   auto pollCancel = [this, &cancelRequested] {
     if (cancelRequested) {
@@ -464,11 +472,15 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
 
   if (result == HttpDownloader::OK) {
     clearBookCache(filename);
-    state = BrowserState::BROWSING;
+    showLoadingBeforeFetch();
+    fetchFeed(currentPath);
+    return;
   } else if (result == HttpDownloader::ABORTED) {
     LOG_DBG("OPDS", "Download cancelled");
     mappedInput.suppressNextBackRelease();
-    state = BrowserState::BROWSING;
+    showLoadingBeforeFetch();
+    fetchFeed(currentPath);
+    return;
   } else {
     state = BrowserState::ERROR;
     errorMessage = tr(STR_DOWNLOAD_FAILED);
