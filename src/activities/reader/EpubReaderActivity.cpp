@@ -1170,6 +1170,14 @@ void EpubReaderActivity::resumeReadingPaceTimer(const char*) {
   }
 }
 
+void EpubReaderActivity::onInputLockChanged(const bool locked) {
+  if (locked) {
+    pauseReadingPaceTimer("quick_lock");
+  } else {
+    resumeReadingPaceTimer("quick_unlock");
+  }
+}
+
 void EpubReaderActivity::armReadingPaceWarmup(const char*) { paceSampleWarmupPending = true; }
 
 bool EpubReaderActivity::forwardPageReadElapsed(uint32_t& seconds, const char*) const {

@@ -116,6 +116,7 @@ class ActivityManager {
   bool preventAutoSleep() const;
   bool isHomeActivity() const;
   bool isReaderActivity() const;
+  void notifyInputLockChanged(bool locked);
   bool canSnapshotForSleepOverlay() const;
   bool skipLoopDelay() const;
   std::string getCurrentBookPath() const;
