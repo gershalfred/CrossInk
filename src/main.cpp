@@ -472,6 +472,25 @@ CrossPointSettings::SHORT_PWRBTN getPowerButtonAction() {
   return action;
 }
 
+void drawQuickLockIndicator() {
+  constexpr int badgeSize = 48;
+  constexpr int bodyX = 9;
+  constexpr int bodyY = 21;
+  constexpr int bodyWidth = 30;
+  constexpr int bodyHeight = 22;
+  const int badgeY = renderer.getScreenHeight() - badgeSize;
+  const bool darkMode = SETTINGS.readerDarkMode != 0;
+  const bool background = darkMode;
+  const bool foreground = !darkMode;
+
+  // Match the bottom-left sleep/loading icon slot while masking the page
+  // beneath it so the indicator stays legible over text and images.
+  renderer.fillRect(0, badgeY, badgeSize, badgeSize, background);
+  renderer.drawRoundedRect(15, badgeY + 5, 18, 24, 4, 9, foreground);
+  renderer.fillRect(bodyX, badgeY + bodyY, bodyWidth, bodyHeight, foreground);
+  renderer.fillRect(22, badgeY + 28, 4, 9, background);
+}
+
 void toggleQuickButtonLock() {
   const auto transition = quickLockState.toggle();
   const bool locked = quickLockState.isLocked();
@@ -479,13 +498,17 @@ void toggleQuickButtonLock() {
     activityManager.notifyInputLockChanged(true);
   }
   LOG_DBG("MAIN", "Quick button lock %s", locked ? "enabled" : "disabled");
-  {
+
+  if (locked) {
     RenderLock lock;
-    GUI.drawPopup(renderer, locked ? tr(STR_QUICK_LOCKED) : tr(STR_QUICK_UNLOCKED));
+    drawQuickLockIndicator();
     renderer.displayBuffer(HalDisplay::FAST_REFRESH);
+  } else {
+    // Re-render the active activity to restore the pixels covered by the
+    // persistent badge. No transient lock/unlock popup is shown.
+    activityManager.requestUpdateAndWait();
   }
-  delay(650);
-  activityManager.requestUpdateAndWait();
+
   if (transition == QuickLockState::Transition::ResumeReading) {
     activityManager.notifyInputLockChanged(false);
   }
@@ -592,14 +615,15 @@ static bool loadSleepFrameBuffer() {
 }
 
 // Enter deep sleep mode
-void enterDeepSleep(bool fromTimeout) {
+void enterDeepSleep(bool fromTimeout, bool forceColdBoot) {
   HalPowerManager::Lock powerLock;  // Ensure we are at normal CPU frequency for sleep preparation
   APP_STATE.lastSleepFromReader = activityManager.isReaderActivity();
 
   const bool isQuickResumeSleep =
-      SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::QUICK_RESUME ||
-      (fromTimeout &&
-       SETTINGS.quickResumeSleepScreen == CrossPointSettings::QUICK_RESUME_SLEEP_SCREEN::QUICK_RESUME_AFTER_TIMEOUT);
+      !forceColdBoot &&
+      (SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::QUICK_RESUME ||
+       (fromTimeout &&
+        SETTINGS.quickResumeSleepScreen == CrossPointSettings::QUICK_RESUME_SLEEP_SCREEN::QUICK_RESUME_AFTER_TIMEOUT));
   APP_STATE.showBootScreen = !isQuickResumeSleep;
 
   APP_STATE.saveToFile();
@@ -967,6 +991,25 @@ void loop() {
         }
         case CrossPointSettings::CHORD_QUICK_LOCK:
           toggleQuickButtonLock();
+          break;
+        case CrossPointSettings::CHORD_NEXT_PAGE:
+          if (activityManager.isReaderActivity()) {
+            mappedInputManager.injectRelease(MappedInputManager::Button::PageForward);
+          }
+          break;
+        case CrossPointSettings::CHORD_PREVIOUS_PAGE:
+          if (activityManager.isReaderActivity()) {
+            mappedInputManager.injectRelease(MappedInputManager::Button::PageBack);
+          }
+          break;
+        case CrossPointSettings::CHORD_SLEEP:
+          enterDeepSleep();
+          break;
+        case CrossPointSettings::CHORD_POWER_OFF:
+          enterDeepSleep(false, true);
+          break;
+        case CrossPointSettings::CHORD_OPDS:
+          activityManager.goToBrowser();
           break;
         case CrossPointSettings::CHORD_DISABLED:
         case CrossPointSettings::POWER_CHORD_ACTION_COUNT:

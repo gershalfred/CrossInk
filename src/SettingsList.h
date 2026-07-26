@@ -428,11 +428,15 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
                                 CrossPointSettings::FILE_BROWSER,
                                 CrossPointSettings::CREATE_CLIPPING,
                                 CrossPointSettings::QUICK_LOCK}));
-    add(SettingInfo::Enum(StrId::STR_POWER_BUTTON_CHORD, &CrossPointSettings::powerChordAction,
-                          {StrId::STR_SCREENSHOT_BUTTON, StrId::STR_QUICK_LOCK, StrId::STR_DISABLED},
-                          "powerChordAction", StrId::STR_CAT_CONTROLS)
+    add(SettingInfo::Enum(
+            StrId::STR_POWER_BUTTON_CHORD, &CrossPointSettings::powerChordAction,
+            {StrId::STR_SCREENSHOT_BUTTON, StrId::STR_QUICK_LOCK, StrId::STR_NEXT_PAGE, StrId::STR_PREV_PAGE,
+             StrId::STR_SLEEP, StrId::STR_POWER_OFF, StrId::STR_OPDS_BROWSER, StrId::STR_DISABLED},
+            "powerChordAction", StrId::STR_CAT_CONTROLS)
             .withEnumRawValues({CrossPointSettings::CHORD_SCREENSHOT, CrossPointSettings::CHORD_QUICK_LOCK,
-                                CrossPointSettings::CHORD_DISABLED}));
+                                CrossPointSettings::CHORD_NEXT_PAGE, CrossPointSettings::CHORD_PREVIOUS_PAGE,
+                                CrossPointSettings::CHORD_SLEEP, CrossPointSettings::CHORD_POWER_OFF,
+                                CrossPointSettings::CHORD_OPDS, CrossPointSettings::CHORD_DISABLED}));
     add(SettingInfo::Enum(StrId::STR_LONG_PRESS_ACTION, &CrossPointSettings::longPwrBtn,
                           {StrId::STR_IGNORE,
                            StrId::STR_SLEEP,
@@ -839,8 +843,9 @@ inline std::vector<SettingInfo> buildControlsSettingsParentList(const std::vecto
 
 inline std::vector<SettingInfo> buildControlsPowerSettingsList(const std::vector<SettingInfo>& allSettings) {
   std::vector<SettingInfo> settings;
-  settings.reserve(3);
+  settings.reserve(4);
   addSettingByName(settings, allSettings, StrId::STR_SHORT_PWR_BTN);
+  addSettingByName(settings, allSettings, StrId::STR_POWER_BUTTON_CHORD);
   addSettingByName(settings, allSettings, StrId::STR_LONG_PRESS_ACTION);
   if (SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::FOOTNOTES ||
       SETTINGS.longPwrBtn == CrossPointSettings::SHORT_PWRBTN::FOOTNOTES ||

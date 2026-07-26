@@ -373,7 +373,15 @@ bool OpdsBookBrowserActivity::ensureEntryBuffer() {
 }
 
 void OpdsBookBrowserActivity::clearEntries() {
-  // Slots past entryCount are ignored and overwritten by the next feed parse.
+  // Release strings from the previous feed before opening the next HTTPS
+  // connection. Merely resetting entryCount leaves title/href/author
+  // allocations alive in every slot, reducing the contiguous heap available
+  // to TLS and causing nested feeds such as Calibre-Web Authors to fail.
+  if (entries) {
+    for (size_t i = 0; i < entryCount; ++i) {
+      entries[i] = OpdsEntry{};
+    }
+  }
   entryCount = 0;
 }
 
