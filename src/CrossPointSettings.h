@@ -399,6 +399,9 @@ class CrossPointSettings {
   uint8_t paragraphAlignment = JUSTIFIED;
   // Auto-sleep timeout setting (default 10 minutes). Legacy sleepTimeout enum values are migration-only.
   uint8_t sleepTimeoutMinutes = 10;
+  // Quick Lock auto-sleep timeout (default 5 minutes). 0 = never auto-sleep while quick-locked.
+  // When quick-locked, this shorter timeout applies instead of sleepTimeoutMinutes.
+  uint8_t quickLockSleepTimeoutMinutes = 5;
   // E-ink refresh frequency (default 15 pages)
   uint8_t refreshFrequency = REFRESH_15;
   uint8_t hyphenationEnabled = 0;
@@ -478,6 +481,10 @@ class CrossPointSettings {
   static constexpr uint8_t MIN_SLEEP_TIMEOUT_MINUTES = 1;
   static constexpr uint8_t SLEEP_TIMEOUT_NEVER_MINUTES = 31;
   static constexpr uint8_t MAX_SLEEP_TIMEOUT_MINUTES = SLEEP_TIMEOUT_NEVER_MINUTES;
+  // Quick Lock auto-sleep timeout limits (same as regular sleep)
+  static constexpr uint8_t MIN_QUICK_LOCK_SLEEP_TIMEOUT_MINUTES = 1;
+  static constexpr uint8_t QUICK_LOCK_SLEEP_TIMEOUT_NEVER_MINUTES = 31;
+  static constexpr uint8_t MAX_QUICK_LOCK_SLEEP_TIMEOUT_MINUTES = QUICK_LOCK_SLEEP_TIMEOUT_NEVER_MINUTES;
   static constexpr uint8_t SD_FONT_MAX_SIZE_STEPS = 8;
   static constexpr uint8_t MIN_LINE_HEIGHT_PERCENT = 70;
   static constexpr uint8_t MAX_LINE_HEIGHT_PERCENT = 200;
@@ -559,6 +566,7 @@ class CrossPointSettings {
  public:
   float getReaderLineCompression() const;
   unsigned long getSleepTimeoutMs() const;
+  unsigned long getQuickLockSleepTimeoutMs() const;
   int getRefreshFrequency() const;
 };
 

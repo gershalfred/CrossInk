@@ -1057,11 +1057,16 @@ void loop() {
   }
 
   if (quickLockState.isLocked()) {
-    // Keep the current screen visible and the device awake, but swallow normal
-    // activity input. Power-button Quick Lock still runs above so the same
-    // configured top-button gesture can unlock.
-    lastActivityTime = millis();
-    powerManager.setPowerSaving(false);
+    // Quick Lock active: use shorter auto-sleep timeout if configured
+    const unsigned long qlTimeoutMs = SETTINGS.getQuickLockSleepTimeoutMs();
+    if (qlTimeoutMs > 0 && millis() - lastActivityTime >= qlTimeoutMs) {
+      // Allow power saving and auto-sleep to trigger while quick-locked
+      powerManager.setPowerSaving(true);
+    } else {
+      // Keep device awake at full performance while quick-locked (legacy behavior)
+      lastActivityTime = millis();
+      powerManager.setPowerSaving(false);
+    }
     return;
   }
 
