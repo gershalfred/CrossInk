@@ -868,11 +868,21 @@ void setup() {
   // The device may retain a rollback-enabled bootloader from the firmware that
   // installed CrossInk. Confirm this OTA slot before any wake route can return
   // to deep sleep; otherwise the next boot can roll back to the previous image.
-  const esp_err_t otaValidationResult = esp_ota_mark_app_valid_cancel_rollback();
+  esp_err_t otaValidationResult = ESP_FAIL;
+  for (uint8_t attempt = 1; attempt <= 3; ++attempt) {
+    otaValidationResult = esp_ota_mark_app_valid_cancel_rollback();
+    if (otaValidationResult == ESP_OK) break;
+    LOG_ERR("BOOT", "OTA image confirmation attempt %u failed: %s", attempt, esp_err_to_name(otaValidationResult));
+    delay(50);
+  }
   if (otaValidationResult == ESP_OK) {
     LOG_INF("BOOT", "Running OTA image confirmed valid");
   } else {
-    LOG_ERR("BOOT", "Failed to confirm running OTA image: %s", esp_err_to_name(otaValidationResult));
+    // Continuing could let a later sleep/restart silently boot the previous OTA
+    // slot. Stay awake so serial diagnostics remain available; a power cycle
+    // can still fall back through the bootloader's normal rollback path.
+    LOG_ERR("BOOT", "Cannot safely continue without confirming this OTA image");
+    while (true) delay(1000);
   }
 #endif
   LOG_INF("BOOT", "Reset diagnostic: reset=%d(%s) sleepWake=%d(%s)", static_cast<int>(rawResetReason),
