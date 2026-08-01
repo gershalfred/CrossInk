@@ -61,6 +61,7 @@ enum : int {
 inline esp_reset_reason_t esp_reset_reason() { return ESP_RST_UNKNOWN; }
 inline esp_sleep_wakeup_cause_t esp_sleep_get_wakeup_cause() { return ESP_SLEEP_WAKEUP_UNDEFINED; }
 #else
+#include <esp_ota_ops.h>
 #include <esp_sleep.h>
 #include <esp_system.h>
 #endif
@@ -863,6 +864,17 @@ void setup() {
 #endif
 
   HalSystem::begin();
+#ifndef SIMULATOR
+  // The device may retain a rollback-enabled bootloader from the firmware that
+  // installed CrossInk. Confirm this OTA slot before any wake route can return
+  // to deep sleep; otherwise the next boot can roll back to the previous image.
+  const esp_err_t otaValidationResult = esp_ota_mark_app_valid_cancel_rollback();
+  if (otaValidationResult == ESP_OK) {
+    LOG_INF("BOOT", "Running OTA image confirmed valid");
+  } else {
+    LOG_ERR("BOOT", "Failed to confirm running OTA image: %s", esp_err_to_name(otaValidationResult));
+  }
+#endif
   LOG_INF("BOOT", "Reset diagnostic: reset=%d(%s) sleepWake=%d(%s)", static_cast<int>(rawResetReason),
           resetReasonName(rawResetReason), static_cast<int>(rawWakeupCause), wakeupCauseName(rawWakeupCause));
 
@@ -951,6 +963,7 @@ void setup() {
       const bool quickLockShortWake =
           quickLockResumePending &&
           (SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::QUICK_LOCK ||
+           SETTINGS.longPwrBtn == CrossPointSettings::SHORT_PWRBTN::QUICK_LOCK ||
            SETTINGS.powerChordAction == CrossPointSettings::POWER_CHORD_ACTION::CHORD_QUICK_LOCK);
       const bool shortWakeAllowed =
           SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::SLEEP || quickLockShortWake;
@@ -1214,11 +1227,22 @@ void loop() {
     return;
   }
 
+  static bool lockedLongPowerHandled = false;
+  static bool powerPressStartedWhileLocked = false;
+  if (!buttonShortcutController.isQuickLocked() && !powerPressed) {
+    lockedLongPowerHandled = false;
+    powerPressStartedWhileLocked = false;
+  }
+
   if (buttonShortcutController.isQuickLocked()) {
-    static bool lockedLongPowerHandled = false;
-    if (!powerPressed) lockedLongPowerHandled = false;
-    if (!buttonShortcutController.isChordActive() && powerPressed && !lockedLongPowerHandled &&
-        gpio.getPowerButtonHeldTime() >= SETTINGS.getPowerButtonLongPressDuration()) {
+    if (!powerPressed) {
+      lockedLongPowerHandled = false;
+      powerPressStartedWhileLocked = false;
+    } else if (gpio.wasPressed(HalGPIO::BTN_POWER)) {
+      powerPressStartedWhileLocked = true;
+    }
+    if (!buttonShortcutController.isChordActive() && powerPressStartedWhileLocked && powerPressed &&
+        !lockedLongPowerHandled && gpio.getPowerButtonHeldTime() >= SETTINGS.getPowerButtonLongPressDuration()) {
       lockedLongPowerHandled = true;
       const auto longAction = static_cast<CrossPointSettings::SHORT_PWRBTN>(SETTINGS.longPwrBtn);
       if (handleGlobalPowerButtonAction(longAction)) return;
