@@ -584,6 +584,63 @@ bool handleGlobalPowerButtonAction(const CrossPointSettings::SHORT_PWRBTN action
   }
 }
 
+CrossPointSettings::SHORT_PWRBTN chordPowerAction(const ButtonShortcutController::ChordAction action) {
+  using Chord = ButtonShortcutController::ChordAction;
+  using Power = CrossPointSettings::SHORT_PWRBTN;
+  switch (action) {
+    case Chord::Sleep:
+      return Power::SLEEP;
+    case Chord::PageTurn:
+      return Power::PAGE_TURN;
+    case Chord::ToggleBookmark:
+      return Power::TOGGLE_BOOKMARK;
+    case Chord::ReadingStats:
+      return Power::READING_STATS;
+    case Chord::MarkFinished:
+      return Power::MARK_FINISHED;
+    case Chord::ForceRefresh:
+      return Power::FORCE_REFRESH;
+    case Chord::ToggleFont:
+      return Power::TOGGLE_FONT;
+    case Chord::ToggleGuideDots:
+      return Power::TOGGLE_GUIDE_DOTS;
+    case Chord::ToggleBionicReading:
+      return Power::TOGGLE_BIONIC_READING;
+    case Chord::CyclePageTurn:
+      return Power::CYCLE_PAGE_TURN;
+    case Chord::SyncProgress:
+      return Power::SYNC_PROGRESS;
+    case Chord::FileTransfer:
+      return Power::FILE_TRANSFER;
+    case Chord::CalibreWireless:
+      return Power::CALIBRE_WIRELESS;
+    case Chord::JoinNetwork:
+      return Power::JOIN_NETWORK;
+    case Chord::CreateHotspot:
+      return Power::CREATE_HOTSPOT;
+    case Chord::ToggleDarkMode:
+      return Power::TOGGLE_DARK_MODE;
+    case Chord::Footnotes:
+      return Power::FOOTNOTES;
+    case Chord::FileBrowser:
+      return Power::FILE_BROWSER;
+    case Chord::CreateClipping:
+      return Power::CREATE_CLIPPING;
+    case Chord::LookupWord:
+      return Power::LOOKUP_WORD;
+    default:
+      return Power::IGNORE;
+  }
+}
+
+bool dispatchConfiguredChordPowerAction(const ButtonShortcutController::ChordAction action) {
+  const auto powerAction = chordPowerAction(action);
+  if (powerAction == CrossPointSettings::SHORT_PWRBTN::IGNORE) return true;
+  if (handleGlobalPowerButtonAction(powerAction)) return true;
+  (void)activityManager.executePowerShortcut(static_cast<uint8_t>(powerAction));
+  return true;
+}
+
 bool dispatchButtonShortcut(const ButtonShortcutController::Result& result) {
   if (result.event == ButtonShortcutController::Event::None) return false;
 
@@ -602,6 +659,8 @@ bool dispatchButtonShortcut(const ButtonShortcutController::Result& result) {
     case ButtonShortcutController::Event::PreviousPage:
       mappedInputManager.injectRelease(MappedInputManager::Button::Left);
       break;
+    case ButtonShortcutController::Event::ConfiguredPowerAction:
+      return dispatchConfiguredChordPowerAction(result.action);
     case ButtonShortcutController::Event::None:
       return false;
   }

@@ -53,6 +53,30 @@ TEST(ButtonShortcutControllerTest, LockedStateOnlyAllowsQuickLockChord) {
   EXPECT_FALSE(controller.isQuickLocked());
 }
 
+TEST(ButtonShortcutControllerTest, RoutesEveryExpandedPowerActionWithoutChangingIt) {
+  using Action = ButtonShortcutController::ChordAction;
+  const Action actions[] = {
+      Action::Sleep,         Action::ToggleBookmark, Action::ReadingStats,    Action::MarkFinished,
+      Action::ForceRefresh,  Action::ToggleFont,     Action::ToggleGuideDots, Action::ToggleBionicReading,
+      Action::CyclePageTurn, Action::SyncProgress,   Action::FileTransfer,    Action::CalibreWireless,
+      Action::JoinNetwork,   Action::CreateHotspot,  Action::ToggleDarkMode,  Action::Footnotes,
+      Action::FileBrowser,   Action::CreateClipping, Action::LookupWord,
+  };
+
+  for (const auto action : actions) {
+    ButtonShortcutController controller;
+    const auto result = controller.update(10u, true, true, false, false, action);
+    EXPECT_EQ(result.event, ButtonShortcutController::Event::ConfiguredPowerAction);
+    EXPECT_TRUE(result.consumeInput);
+    EXPECT_EQ(result.action, action);
+  }
+
+  ButtonShortcutController controller;
+  const auto pageTurn = controller.update(10u, true, true, false, false, Action::PageTurn);
+  EXPECT_EQ(pageTurn.event, ButtonShortcutController::Event::NextPage);
+  EXPECT_TRUE(pageTurn.consumeInput);
+}
+
 TEST(ButtonShortcutControllerTest, ShortPowerCanToggleLock) {
   ButtonShortcutController controller;
   auto result = controller.update(10u, false, false, true, true, ButtonShortcutController::ChordAction::Disabled);

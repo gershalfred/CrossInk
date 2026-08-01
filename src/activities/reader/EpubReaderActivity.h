@@ -328,6 +328,7 @@ class EpubReaderActivity final : public Activity {
   bool consumeLongPowerButtonHold();
   bool executeShortPowerButtonAction();
   bool executeLongPowerButtonAction();
+  bool executePowerShortcut(uint8_t action) override;
   void handleClippingJump(const ClippingJumpResult& clipping);
   bool handleTouchDictionaryLookup();
   void openWordSelect(bool framebufferContainsPage, int initialTouchX = -1, int initialTouchY = -1,

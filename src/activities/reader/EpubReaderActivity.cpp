@@ -3983,6 +3983,69 @@ void EpubReaderActivity::executeFootnoteQuickAction(const bool suppressInitialPo
   }
 }
 
+bool EpubReaderActivity::executePowerShortcut(const uint8_t rawAction) {
+  switch (static_cast<CrossPointSettings::SHORT_PWRBTN>(rawAction)) {
+    case CrossPointSettings::SHORT_PWRBTN::TOGGLE_FONT:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_CHANGE_FONT);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::TOGGLE_GUIDE_DOTS:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_TOGGLE_GUIDE_DOTS);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::TOGGLE_BIONIC_READING:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_TOGGLE_BIONIC);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::TOGGLE_BOOKMARK:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_TOGGLE_BOOKMARK);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::SYNC_PROGRESS:
+      mappedInput.suppressNextPowerConfirmRelease();
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_SYNC_PROGRESS);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::MARK_FINISHED:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_MARK_FINISHED);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::READING_STATS:
+      mappedInput.suppressNextPowerConfirmRelease();
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_READING_STATS);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::CYCLE_PAGE_TURN:
+      mappedInput.suppressNextPowerConfirmRelease();
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_CYCLE_PAGE_TURN);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::FILE_TRANSFER:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_FILE_TRANSFER);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::CALIBRE_WIRELESS:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_CALIBRE_WIRELESS);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::JOIN_NETWORK:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_JOIN_NETWORK);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::CREATE_HOTSPOT:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_CREATE_HOTSPOT);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::TOGGLE_DARK_MODE:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_TOGGLE_DARK_MODE);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::FOOTNOTES:
+      executeFootnoteQuickAction(/*suppressInitialPowerRelease=*/true);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::FILE_BROWSER:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_FILE_BROWSER);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING:
+      mappedInput.suppressNextPowerConfirmRelease();
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_CREATE_CLIPPING);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::LOOKUP_WORD:
+      mappedInput.suppressNextPowerConfirmRelease();
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_LOOKUP_WORD);
+      return true;
+    default:
+      return false;
+  }
+}
+
 bool EpubReaderActivity::executeShortPowerButtonAction() {
   if (!mappedInput.wasReleased(MappedInputManager::Button::Power) ||
       mappedInput.getHeldTime() >= SETTINGS.getPowerButtonLongPressDuration()) {

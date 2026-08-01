@@ -131,6 +131,7 @@ class ActivityManager {
 #endif
   bool canSnapshotForSleepOverlay() const;
   bool requestManualReaderRefresh();
+  bool executePowerShortcut(uint8_t action);
   bool skipLoopDelay() const;
   std::string getCurrentBookPath() const;
   ScreenshotInfo getScreenshotInfo() const;

@@ -491,6 +491,10 @@ void ActivityManager::notifyInputLockChanged(const bool locked) {
   if (currentActivity) currentActivity->onInputLockChanged(locked);
 }
 
+bool ActivityManager::executePowerShortcut(const uint8_t action) {
+  return currentActivity && currentActivity->executePowerShortcut(action);
+}
+
 bool ActivityManager::canSnapshotForSleepOverlay() const {
   return currentActivity && currentActivity->canSnapshotForSleepOverlay();
 }

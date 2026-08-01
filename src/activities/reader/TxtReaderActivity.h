@@ -48,6 +48,7 @@ class TxtReaderActivity final : public Activity {
   bool consumeLongPowerButtonRelease();
   bool consumeLongPowerButtonHold();
   bool executePowerButtonAction();
+  bool executePowerShortcut(uint8_t action) override;
   bool executeLongPressBackAction();
   void openReaderMenu();
 

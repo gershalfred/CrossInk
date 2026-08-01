@@ -64,6 +64,7 @@ class XtcReaderActivity final : public Activity {
   void openReaderMenu();
   void onReaderMenuConfirm(int action);
   bool executeLongPressBackAction();
+  bool executePowerShortcut(uint8_t action) override;
 
  public:
   explicit XtcReaderActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, std::unique_ptr<Xtc> xtc,

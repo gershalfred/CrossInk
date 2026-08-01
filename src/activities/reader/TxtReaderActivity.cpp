@@ -320,37 +320,37 @@ bool TxtReaderActivity::consumeLongPowerButtonHold() {
   return true;
 }
 
-bool TxtReaderActivity::executePowerButtonAction() {
-  auto executeAction = [this](const CrossPointSettings::SHORT_PWRBTN action) {
-    switch (action) {
-      case CrossPointSettings::SHORT_PWRBTN::FILE_TRANSFER:
-        activityManager.goToFileTransfer(txt ? txt->getPath() : "");
-        return true;
-      case CrossPointSettings::SHORT_PWRBTN::CALIBRE_WIRELESS:
-        activityManager.goToCalibreWireless(txt ? txt->getPath() : "");
-        return true;
-      case CrossPointSettings::SHORT_PWRBTN::JOIN_NETWORK:
-        activityManager.goToJoinNetworkFileTransfer(txt ? txt->getPath() : "");
-        return true;
-      case CrossPointSettings::SHORT_PWRBTN::CREATE_HOTSPOT:
-        activityManager.goToHotspotFileTransfer(txt ? txt->getPath() : "");
-        return true;
-      case CrossPointSettings::SHORT_PWRBTN::TOGGLE_DARK_MODE:
-        toggleDarkMode();
-        return true;
-      case CrossPointSettings::SHORT_PWRBTN::FILE_BROWSER:
-        activityManager.goToFileBrowser(txt ? txt->getPath() : "");
-        return true;
-      case CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING:
-        return false;
-      default:
-        return false;
-    }
-  };
+bool TxtReaderActivity::executePowerShortcut(const uint8_t rawAction) {
+  switch (static_cast<CrossPointSettings::SHORT_PWRBTN>(rawAction)) {
+    case CrossPointSettings::SHORT_PWRBTN::FILE_TRANSFER:
+      activityManager.goToFileTransfer(txt ? txt->getPath() : "");
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::CALIBRE_WIRELESS:
+      activityManager.goToCalibreWireless(txt ? txt->getPath() : "");
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::JOIN_NETWORK:
+      activityManager.goToJoinNetworkFileTransfer(txt ? txt->getPath() : "");
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::CREATE_HOTSPOT:
+      activityManager.goToHotspotFileTransfer(txt ? txt->getPath() : "");
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::TOGGLE_DARK_MODE:
+      toggleDarkMode();
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::FILE_BROWSER:
+      activityManager.goToFileBrowser(txt ? txt->getPath() : "");
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING:
+      return false;
+    default:
+      return false;
+  }
+}
 
+bool TxtReaderActivity::executePowerButtonAction() {
   if (mappedInput.wasReleased(MappedInputManager::Button::Power) &&
       mappedInput.getHeldTime() < SETTINGS.getPowerButtonLongPressDuration()) {
-    return executeAction(static_cast<CrossPointSettings::SHORT_PWRBTN>(SETTINGS.shortPwrBtn));
+    return executePowerShortcut(SETTINGS.shortPwrBtn);
   }
 
   const auto longPowerAction = static_cast<CrossPointSettings::SHORT_PWRBTN>(SETTINGS.longPwrBtn);
@@ -358,7 +358,7 @@ bool TxtReaderActivity::executePowerButtonAction() {
     return false;
   }
 
-  if (executeAction(longPowerAction)) {
+  if (executePowerShortcut(static_cast<uint8_t>(longPowerAction))) {
     return true;
   }
 

@@ -122,6 +122,30 @@ void XtcReaderActivity::openReaderMenu() {
       });
 }
 
+bool XtcReaderActivity::executePowerShortcut(const uint8_t rawAction) {
+  switch (static_cast<CrossPointSettings::SHORT_PWRBTN>(rawAction)) {
+    case CrossPointSettings::SHORT_PWRBTN::FILE_TRANSFER:
+      activityManager.goToFileTransfer(xtc ? xtc->getPath() : "");
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::CALIBRE_WIRELESS:
+      activityManager.goToCalibreWireless(xtc ? xtc->getPath() : "");
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::JOIN_NETWORK:
+      activityManager.goToJoinNetworkFileTransfer(xtc ? xtc->getPath() : "");
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::CREATE_HOTSPOT:
+      activityManager.goToHotspotFileTransfer(xtc ? xtc->getPath() : "");
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::FILE_BROWSER:
+      activityManager.goToFileBrowser(xtc ? xtc->getPath() : "");
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING:
+      return false;
+    default:
+      return false;
+  }
+}
+
 void XtcReaderActivity::loop() {
   if (!xtc) {
     return;
@@ -199,27 +223,7 @@ void XtcReaderActivity::loop() {
     return;
   }
   auto executePowerAction = [this](const CrossPointSettings::SHORT_PWRBTN action) {
-    switch (action) {
-      case CrossPointSettings::SHORT_PWRBTN::FILE_TRANSFER:
-        activityManager.goToFileTransfer(xtc ? xtc->getPath() : "");
-        return true;
-      case CrossPointSettings::SHORT_PWRBTN::CALIBRE_WIRELESS:
-        activityManager.goToCalibreWireless(xtc ? xtc->getPath() : "");
-        return true;
-      case CrossPointSettings::SHORT_PWRBTN::JOIN_NETWORK:
-        activityManager.goToJoinNetworkFileTransfer(xtc ? xtc->getPath() : "");
-        return true;
-      case CrossPointSettings::SHORT_PWRBTN::CREATE_HOTSPOT:
-        activityManager.goToHotspotFileTransfer(xtc ? xtc->getPath() : "");
-        return true;
-      case CrossPointSettings::SHORT_PWRBTN::FILE_BROWSER:
-        activityManager.goToFileBrowser(xtc ? xtc->getPath() : "");
-        return true;
-      case CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING:
-        return false;
-      default:
-        return false;
-    }
+    return executePowerShortcut(static_cast<uint8_t>(action));
   };
 
   if (powerReleased && mappedInput.getHeldTime() < SETTINGS.getPowerButtonLongPressDuration() &&
