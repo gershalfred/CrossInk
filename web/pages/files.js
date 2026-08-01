@@ -4392,32 +4392,47 @@ function uploadFileWebSocket(file, onProgress, onComplete, onError) {
         await new Promise((r) => setTimeout(r, 50));
 
         try {
-          // Send file in chunks
+          // Keep one 64KB browser-side read ahead while retaining 4KB frames on
+          // the wire. The read-ahead removes per-frame Blob/File overhead;
+          // bufferedAmount polling yields to the browser instead of blocking
+          // the UI thread or overfilling the ESP32 WebSocket queue.
+          const WS_PREREAD_SIZE = 64 * 1024;
+          const WS_MAX_BUFFERED_AMOUNT = WS_PREREAD_SIZE;
           const totalSize = file.size;
           let offset = 0;
+          let batchOffset = 0;
+          let batch = new Uint8Array(0);
+          let nextBatch = file.slice(0, Math.min(WS_PREREAD_SIZE, totalSize)).arrayBuffer();
 
           while (offset < totalSize && ws.readyState === WebSocket.OPEN) {
-            const chunkSize = Math.min(WS_CHUNK_SIZE, totalSize - offset);
-            const chunk = file.slice(offset, offset + chunkSize);
-            const buffer = await chunk.arrayBuffer();
+            if (batchOffset >= batch.byteLength) {
+              batch = new Uint8Array(await nextBatch);
+              batchOffset = 0;
+              const nextOffset = offset + batch.byteLength;
+              nextBatch =
+                nextOffset < totalSize
+                  ? file.slice(nextOffset, Math.min(nextOffset + WS_PREREAD_SIZE, totalSize)).arrayBuffer()
+                  : Promise.resolve(new ArrayBuffer(0));
+            }
 
-            // Wait for buffer to clear - more aggressive backpressure
-            while (ws.bufferedAmount > WS_CHUNK_SIZE * 2 && ws.readyState === WebSocket.OPEN) {
-              await new Promise((r) => setTimeout(r, 5));
+            const frameLength = Math.min(WS_CHUNK_SIZE, batch.byteLength - batchOffset);
+            const frame = batch.slice(batchOffset, batchOffset + frameLength);
+
+            // Nonblocking backpressure: allow the browser/network stack to
+            // drain without sleeping the firmware-facing event loop.
+            while (ws.bufferedAmount > WS_MAX_BUFFERED_AMOUNT && ws.readyState === WebSocket.OPEN) {
+              await new Promise((r) => setTimeout(r, 0));
             }
 
             if (ws.readyState !== WebSocket.OPEN) {
               throw new Error("WebSocket closed during upload");
             }
 
-            ws.send(buffer);
-            offset += chunkSize;
+            ws.send(frame);
+            batchOffset += frameLength;
+            offset += frameLength;
 
-            // Update local progress with real transfer progress
-            // Server will confirm 100% with DONE message
-            if (onProgress) {
-              onProgress(offset, totalSize);
-            }
+            if (onProgress) onProgress(offset, totalSize);
           }
 
           sendingChunks = false;
