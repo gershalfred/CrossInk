@@ -33,12 +33,13 @@ namespace fui = freeink::ui;
 
 namespace {
 constexpr size_t OPDS_BROWSER_ENTRY_CAPACITY = MAX_OPDS_FEED_ENTRIES + 2;
+constexpr size_t OPDS_CATALOG_DOWNLOAD_BUFFER_SIZE = 512;
 constexpr size_t OPDS_DOWNLOAD_BUFFER_SIZE = 2048;
+constexpr char FEED_TMP_PATH[] = "/.crosspoint/opds_feed.tmp";
 constexpr fui::ActionId ACTION_ROW = 1;
 constexpr fui::ActionId ACTION_SEARCH = 2;
 constexpr fui::ActionId ACTION_CANCEL = 3;
-constexpr int DOWNLOAD_PROGRESS_STEP_PERCENT = 5;
-constexpr unsigned long DOWNLOAD_PROGRESS_MIN_UPDATE_MS = 5000;
+constexpr unsigned long DOWNLOAD_PROGRESS_MIN_UPDATE_MS = 1000;
 
 std::string buildBookFilenameBase(const OpdsEntry& book, const OpdsFilenameFormat format) {
   if (book.author.empty()) return book.title;
@@ -478,23 +479,105 @@ void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
     return;
   }
 
+  // Phase-separate HTTPS/TLS from XML parsing. The ESP32-C3 cannot reliably
+  // keep the TLS stack, the catalog entry strings, and Expat's parse buffer
+  // alive together for large feeds.
   clearEntries();
+  entries.reset();
+  std::string{}.swap(searchTemplate);
+
   const std::string url = UrlUtils::buildUrl(server.url, path);
   LOG_DBG("OPDS", "Fetching: %s", url.c_str());
+
+  cancelDownload = false;
+  bool cancelRequested = false;
+  auto pollCancel = [this, &cancelRequested] {
+    if (cancelRequested || cancelDownload) {
+      cancelRequested = true;
+      return true;
+    }
+    mappedInput.update();
+    if (uiReady) {
+      const fui::InputSnapshot snap = touchSnapshotFrom(mappedInput);
+      if (snap.touchPressed || snap.touchReleased) app.route(snap);
+    }
+    if (mappedInput.isPressed(MappedInputManager::Button::Back) ||
+        mappedInput.wasPressed(MappedInputManager::Button::Back) ||
+        mappedInput.wasReleased(MappedInputManager::Button::Back)) {
+      cancelRequested = true;
+    }
+    return cancelRequested;
+  };
+
+  HttpDownloader::DownloadOptions feedOptions;
+  feedOptions.shouldCancel = pollCancel;
+  feedOptions.bufferSize = OPDS_CATALOG_DOWNLOAD_BUFFER_SIZE;
+  feedOptions.transport = HttpDownloader::Transport::WOLFSSL;
+  const auto feedResult = HttpDownloader::downloadToFile(url, FEED_TMP_PATH, nullptr, &cancelRequested, server.username,
+                                                         server.password, std::move(feedOptions));
+  if (feedResult == HttpDownloader::ABORTED) {
+    Storage.remove(FEED_TMP_PATH);
+    mappedInput.suppressNextBackRelease();
+    navigateBack();
+    return;
+  }
+  if (feedResult != HttpDownloader::OK) {
+    Storage.remove(FEED_TMP_PATH);
+    state = BrowserState::ERROR;
+    errorMessage = tr(STR_FETCH_FEED_FAILED);
+    requestUpdate();
+    return;
+  }
+
+  if (!ensureEntryBuffer()) {
+    Storage.remove(FEED_TMP_PATH);
+    state = BrowserState::ERROR;
+    errorMessage = tr(STR_MEMORY_ERROR);
+    requestUpdate();
+    return;
+  }
+
+  FsFile feedFile;
+  if (!Storage.openFileForRead("OPDS", FEED_TMP_PATH, feedFile)) {
+    Storage.remove(FEED_TMP_PATH);
+    state = BrowserState::ERROR;
+    errorMessage = tr(STR_FETCH_FEED_FAILED);
+    requestUpdate();
+    return;
+  }
+
+  auto readBuffer = makeUniqueNoThrow<uint8_t[]>(OPDS_DOWNLOAD_BUFFER_SIZE);
+  if (!readBuffer) {
+    LOG_ERR("OPDS", "OOM: feed read buffer (%u free, %u max alloc)", ESP.getFreeHeap(), ESP.getMaxAllocHeap());
+    feedFile.close();
+    Storage.remove(FEED_TMP_PATH);
+    state = BrowserState::ERROR;
+    errorMessage = tr(STR_MEMORY_ERROR);
+    requestUpdate();
+    return;
+  }
+
   OpdsParser parser(entries.get(), MAX_OPDS_FEED_ENTRIES);
+  bool readOk = true;
   {
     OpdsParserStream stream{parser};
-    HttpDownloader::DownloadOptions downloadOptions;
-    downloadOptions.transport = HttpDownloader::Transport::WOLFSSL;
-    const auto result = HttpDownloader::streamUrl(
-        url, [&stream](const uint8_t* data, const size_t len) { return stream.write(data, len) == len; }, nullptr,
-        server.username, server.password, std::move(downloadOptions));
-    if (result != HttpDownloader::OK) {
-      state = BrowserState::ERROR;
-      errorMessage = tr(STR_FETCH_FEED_FAILED);
-      requestUpdate();
-      return;
+    while (parser) {
+      const int bytesRead = feedFile.read(readBuffer.get(), OPDS_DOWNLOAD_BUFFER_SIZE);
+      if (bytesRead < 0) readOk = false;
+      if (bytesRead <= 0) break;
+      if (stream.write(readBuffer.get(), static_cast<size_t>(bytesRead)) != static_cast<size_t>(bytesRead)) {
+        readOk = false;
+        break;
+      }
     }
+  }
+  feedFile.close();
+  Storage.remove(FEED_TMP_PATH);
+  if (!readOk) {
+    state = BrowserState::ERROR;
+    errorMessage = tr(STR_FETCH_FEED_FAILED);
+    requestUpdate();
+    return;
   }
 
   if (!parser) {
@@ -614,6 +697,13 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
   filename += ".epub";
   LOG_DBG("OPDS", "Downloading: %s -> %s", downloadUrl.c_str(), filename.c_str());
 
+  // The selected book is now fully copied into local strings. Free the
+  // catalog before opening the second TLS connection so its retained titles,
+  // authors, and URLs do not compete with the download buffers.
+  clearEntries();
+  entries.reset();
+  std::string{}.swap(searchTemplate);
+
   bool cancelRequested = false;
   auto pollCancel = [this, &cancelRequested] {
     if (cancelRequested || cancelDownload) {
@@ -660,8 +750,7 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
         const int percent = total > 0 ? static_cast<int>(static_cast<uint64_t>(downloaded) * 100 / total) : 0;
         const unsigned long now = millis();
         if (percent >= 100 || lastRenderedPercent < 0 ||
-            percent >= lastRenderedPercent + DOWNLOAD_PROGRESS_STEP_PERCENT ||
-            now - lastProgressUpdateMs >= DOWNLOAD_PROGRESS_MIN_UPDATE_MS) {
+            (percent > lastRenderedPercent && now - lastProgressUpdateMs >= DOWNLOAD_PROGRESS_MIN_UPDATE_MS)) {
           lastRenderedPercent = percent;
           lastProgressUpdateMs = now;
           requestUpdate(true);
@@ -671,7 +760,9 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
 
   if (result == HttpDownloader::OK) {
     clearBookCache(filename);
-    state = BrowserState::BROWSING;
+    showLoadingBeforeFetch();
+    fetchFeed(currentPath);
+    return;
   } else if (result == HttpDownloader::ABORTED) {
     LOG_INF("OPDS", "Download cancelled");
     if (goHomeAfterCancel) {
@@ -679,7 +770,9 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
       return;
     }
     mappedInput.suppressNextBackRelease();
-    state = BrowserState::BROWSING;
+    showLoadingBeforeFetch();
+    fetchFeed(currentPath);
+    return;
   } else {
     state = BrowserState::ERROR;
     errorMessage = tr(STR_DOWNLOAD_FAILED);
