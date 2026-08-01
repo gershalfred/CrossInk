@@ -12,6 +12,9 @@ def parse_assignments(path: Path) -> dict[str, str]:
     with path.open("r", encoding="utf-8") as config:
         for raw_line in config:
             line = raw_line.strip()
+            if line.startswith("# CONFIG_") and line.endswith(" is not set"):
+                values[line[2 : -len(" is not set")]] = "n"
+                continue
             if not line or line.startswith("#") or "=" not in line:
                 continue
             key, value = line.split("=", 1)

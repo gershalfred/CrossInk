@@ -1,12 +1,12 @@
 #include "QrUtils.h"
 
 #include <Utf8.h>
-#include <qrcode.h>
 
 #include <algorithm>
 #include <memory>
 
 #include "Logging.h"
+#include "RicmooQrCode.h"
 
 void QrUtils::drawQrCode(const GfxRenderer& renderer, const Rect& bounds, const std::string& textPayload) {
   // Dynamically calculate the QR code version based on text length

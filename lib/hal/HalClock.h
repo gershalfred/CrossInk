@@ -1,7 +1,10 @@
 #pragma once
 
 #include <Arduino.h>
-#include <Rtc.h>
+// Use the FreeInk SDK RTC explicitly. ESP-IDF also ships a deprecated
+// esp32c3/Rtc.h; the hybrid Arduino+IDF build can otherwise select that
+// unrelated header because the names differ only by include-path order.
+#include "../../freeink-sdk/libs/hardware/Rtc/include/Rtc.h"
 
 class HalClock;
 extern HalClock halClock;  // Singleton

@@ -4416,7 +4416,7 @@ function uploadFileWebSocket(file, onProgress, onComplete, onError) {
             }
 
             const frameLength = Math.min(WS_CHUNK_SIZE, batch.byteLength - batchOffset);
-            const frame = batch.slice(batchOffset, batchOffset + frameLength);
+            const frame = batch.subarray(batchOffset, batchOffset + frameLength);
 
             // Nonblocking backpressure: allow the browser/network stack to
             // drain without sleeping the firmware-facing event loop.
