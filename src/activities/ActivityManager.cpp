@@ -487,6 +487,10 @@ bool ActivityManager::isCurrentActivityNamed(const char* activityName) const {
 }
 #endif
 
+void ActivityManager::notifyInputLockChanged(const bool locked) {
+  if (currentActivity) currentActivity->onInputLockChanged(locked);
+}
+
 bool ActivityManager::canSnapshotForSleepOverlay() const {
   return currentActivity && currentActivity->canSnapshotForSleepOverlay();
 }

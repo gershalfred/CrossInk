@@ -36,6 +36,9 @@ class MappedInputManager {
   void suppressNextConfirmRelease() { suppressConfirmRelease = true; }
   void suppressNextPowerRelease() { suppressPowerRelease = true; }
   void suppressNextPowerConfirmRelease() { suppressPowerConfirmRelease = true; }
+
+  void injectRelease(Button button) { injectedReleased[static_cast<size_t>(button)] = true; }
+  void clearInjectedReleases() const { injectedReleased.fill(false); }
   bool wasPressed(Button button) const;
   bool wasReleased(Button button) const;
   bool isPressed(Button button) const;
@@ -168,6 +171,8 @@ class MappedInputManager {
   mutable bool suppressConfirmRelease = false;
   mutable bool suppressPowerRelease = false;
   mutable bool suppressPowerConfirmRelease = false;
+
+  mutable std::array<bool, BUTTON_COUNT> injectedReleased{};
 #if CROSSINK_APP_CAP_TOUCH
   mutable bool suppressTouchTap = false;
 #endif

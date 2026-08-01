@@ -123,6 +123,7 @@ class ActivityManager {
   bool preventAutoSleep() const;
   bool isHomeActivity() const;
   bool isReaderActivity() const;
+  void notifyInputLockChanged(bool locked);
   bool readerPowerButtonOpensSettings() const;
   bool hasActivityNamed(const char* activityName) const;
 #ifdef SIMULATOR

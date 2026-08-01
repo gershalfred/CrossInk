@@ -197,6 +197,15 @@ std::string formatSettingValue(const SettingInfo& setting) {
              static_cast<unsigned int>(SETTINGS.*(setting.valuePtr)));
     return valueBuffer;
   }
+  if (setting.nameId == StrId::STR_QUICK_LOCK_TIMEOUT) {
+    if (SETTINGS.quickLockSleepTimeoutMinutes >= CrossPointSettings::QUICK_LOCK_SLEEP_TIMEOUT_NEVER_MINUTES) {
+      return tr(STR_SLEEP_NEVER);
+    }
+    char valueBuffer[32];
+    snprintf(valueBuffer, sizeof(valueBuffer), tr(STR_SLEEP_TIMER_VALUE_FORMAT),
+             static_cast<unsigned int>(SETTINGS.quickLockSleepTimeoutMinutes));
+    return valueBuffer;
+  }
   if (setting.valuePtr == &CrossPointSettings::lineHeightPercent) {
     return std::to_string(SETTINGS.*(setting.valuePtr)) + "%";
   }
@@ -838,6 +847,10 @@ void SettingsActivity::toggleCurrentSetting() {
     openSleepTimeoutPicker();
     return;
   }
+  if (setting.nameId == StrId::STR_QUICK_LOCK_TIMEOUT) {
+    openQuickLockTimeoutPicker();
+    return;
+  }
   if (setting.valuePtr == &CrossPointSettings::lineHeightPercent) {
     openLineHeightPicker();
     return;
@@ -1032,6 +1045,24 @@ void SettingsActivity::openSleepTimeoutPicker() {
       [this](const ActivityResult& result) {
         if (!result.isCancelled) {
           SETTINGS.sleepTimeoutMinutes = static_cast<uint8_t>(std::get<IntervalResult>(result.data).value);
+          SETTINGS.saveToFile();
+        }
+        requestUpdate();
+      });
+}
+
+void SettingsActivity::openQuickLockTimeoutPicker() {
+  startActivityForResult(
+      std::make_unique<IntervalSelectionActivity>(
+          renderer, mappedInput, "QuickLockTimeoutInterval", StrId::STR_QUICK_LOCK_TIMEOUT,
+          SETTINGS.quickLockSleepTimeoutMinutes, CrossPointSettings::MIN_QUICK_LOCK_SLEEP_TIMEOUT_MINUTES,
+          CrossPointSettings::MAX_QUICK_LOCK_SLEEP_TIMEOUT_MINUTES, 1, 5, StrId::STR_SLEEP_TIMER_VALUE_FORMAT,
+          /*readerActivity=*/false, /*allowPowerAsConfirm=*/false, /*ignoreInitialConfirmRelease=*/true,
+          /*showPercentValue=*/false, StrId::STR_SLEEP_NEVER, /*overrideDisabledReaderTouchscreen=*/false,
+          /*showTouchHeaderBackButton=*/true),
+      [this](const ActivityResult& result) {
+        if (!result.isCancelled) {
+          SETTINGS.quickLockSleepTimeoutMinutes = static_cast<uint8_t>(std::get<IntervalResult>(result.data).value);
           SETTINGS.saveToFile();
         }
         requestUpdate();

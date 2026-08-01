@@ -290,6 +290,7 @@ class SettingsActivity final : public Activity {
   void openIdleTimeThresholdPicker();
   void toggleCurrentSetting();
   void openSleepTimeoutPicker();
+  void openQuickLockTimeoutPicker();
   void openLineHeightPicker();
   void openStringEditor(const SettingInfo& setting);
   void rebuildSettingsLists();

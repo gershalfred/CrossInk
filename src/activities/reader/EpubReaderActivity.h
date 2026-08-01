@@ -385,6 +385,9 @@ class EpubReaderActivity final : public Activity {
   void idlePrewarmNextPage();
   bool skipLoopDelay() override { return sectionBuildWantsTick() && !backgroundBuildPausedForLowMemory; }
   bool isReaderActivity() const override { return true; }
+  void onInputLockChanged(bool locked) override {
+    locked ? pauseReadingPaceTimer("quick_lock") : resumeReadingPaceTimer("quick_unlock");
+  }
   bool canSnapshotForSleepOverlay() const override { return true; }
   bool handlesReaderPowerSettingsOverride() const override { return true; }
   bool openReaderSettingsMenu() override {

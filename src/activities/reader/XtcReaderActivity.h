@@ -76,6 +76,9 @@ class XtcReaderActivity final : public Activity {
   void loop() override;
   void render(RenderLock&&) override;
   bool isReaderActivity() const override { return true; }
+  void onInputLockChanged(bool locked) override {
+    locked ? pauseReadingStatsTimer("quick_lock") : resumeReadingStatsTimer("quick_unlock");
+  }
   bool canSnapshotForSleepOverlay() const override { return true; }
   bool handlesReaderPowerSettingsOverride() const override { return true; }
   bool openReaderSettingsMenu() override {

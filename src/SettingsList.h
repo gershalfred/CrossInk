@@ -465,7 +465,8 @@ inline const std::vector<SettingInfo>& getBaseSettingsList() {
                            StrId::STR_FOOTNOTES,
                            StrId::STR_BROWSE_FILES,
                            StrId::STR_SAVE_CLIPPING,
-                           StrId::STR_LOOKUP},
+                           StrId::STR_LOOKUP,
+                           StrId::STR_QUICK_LOCK},
                           "shortPwrBtn", StrId::STR_CAT_CONTROLS)
             .withEnumRawValues({CrossPointSettings::IGNORE,
                                 CrossPointSettings::SLEEP,
@@ -488,7 +489,15 @@ inline const std::vector<SettingInfo>& getBaseSettingsList() {
                                 CrossPointSettings::FOOTNOTES,
                                 CrossPointSettings::FILE_BROWSER,
                                 CrossPointSettings::CREATE_CLIPPING,
-                                CrossPointSettings::LOOKUP_WORD}));
+                                CrossPointSettings::LOOKUP_WORD,
+                                CrossPointSettings::QUICK_LOCK}));
+    add(SettingInfo::Enum(StrId::STR_POWER_BUTTON_CHORD, &CrossPointSettings::powerChordAction,
+                          {StrId::STR_SCREENSHOT_BUTTON, StrId::STR_QUICK_LOCK, StrId::STR_NEXT_PAGE,
+                           StrId::STR_PREV_PAGE, StrId::STR_DISABLED},
+                          "powerChordAction", StrId::STR_CAT_CONTROLS)
+            .withEnumRawValues({CrossPointSettings::CHORD_SCREENSHOT, CrossPointSettings::CHORD_QUICK_LOCK,
+                                CrossPointSettings::CHORD_NEXT_PAGE, CrossPointSettings::CHORD_PREVIOUS_PAGE,
+                                CrossPointSettings::CHORD_DISABLED}));
     add(SettingInfo::Enum(StrId::STR_LONG_PRESS_ACTION, &CrossPointSettings::longPwrBtn,
                           {StrId::STR_IGNORE,
                            StrId::STR_SLEEP,
@@ -633,6 +642,10 @@ inline const std::vector<SettingInfo>& getBaseSettingsList() {
         StrId::STR_TIME_TO_SLEEP, &CrossPointSettings::sleepTimeoutMinutes,
         {CrossPointSettings::MIN_SLEEP_TIMEOUT_MINUTES, CrossPointSettings::MAX_SLEEP_TIMEOUT_MINUTES, 1},
         "sleepTimeoutMinutes", StrId::STR_CAT_SYSTEM));
+    add(SettingInfo::Value(StrId::STR_QUICK_LOCK_TIMEOUT, &CrossPointSettings::quickLockSleepTimeoutMinutes,
+                           {CrossPointSettings::MIN_QUICK_LOCK_SLEEP_TIMEOUT_MINUTES,
+                            CrossPointSettings::MAX_QUICK_LOCK_SLEEP_TIMEOUT_MINUTES, 1},
+                           "quickLockSleepTimeoutMinutes", StrId::STR_CAT_SYSTEM));
     add(SettingInfo::Toggle(StrId::STR_SHOW_HIDDEN_FILES, &CrossPointSettings::showHiddenFiles, "showHiddenFiles",
                             StrId::STR_CAT_SYSTEM));
     add(SettingInfo::Toggle(StrId::STR_HIDE_FILE_EXTENSION, &CrossPointSettings::hideFileExtension, "hideFileExtension",
@@ -996,8 +1009,9 @@ inline std::vector<SettingInfo> buildControlsSettingsParentList(const std::vecto
 
 inline std::vector<SettingInfo> buildControlsPowerSettingsList(const std::vector<SettingInfo>& allSettings) {
   std::vector<SettingInfo> settings;
-  settings.reserve(3);
+  settings.reserve(4);
   addSettingByName(settings, allSettings, StrId::STR_SHORT_PWR_BTN);
+  addSettingByName(settings, allSettings, StrId::STR_POWER_BUTTON_CHORD);
   addSettingByName(settings, allSettings, StrId::STR_LONG_PRESS_ACTION);
   if (SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::FOOTNOTES ||
       SETTINGS.longPwrBtn == CrossPointSettings::SHORT_PWRBTN::FOOTNOTES ||
@@ -1096,6 +1110,7 @@ inline std::vector<SettingInfo> buildSystemDeviceSettingsList(const std::vector<
   settings.reserve(9);
   addSettingByName(settings, allSettings, StrId::STR_DEVICE_NAME);
   addSettingByName(settings, allSettings, StrId::STR_TIME_TO_SLEEP);
+  addSettingByName(settings, allSettings, StrId::STR_QUICK_LOCK_TIMEOUT);
   settings.push_back(SettingInfo::Action(StrId::STR_LANGUAGE, SettingAction::Language));
   if (halClock.isAvailable()) {
     addSettingByName(settings, allSettings, StrId::STR_CLOCK_FORMAT);

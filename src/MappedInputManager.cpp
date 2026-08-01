@@ -598,6 +598,7 @@ bool MappedInputManager::wasLightPanelGesture() const { return hasHomeKeyHardwar
 #endif
 
 bool MappedInputManager::wasPressed(const Button button) const {
+  if (injectedReleased[static_cast<size_t>(button)]) return false;
 #ifdef SIMULATOR
   if (simulatorPressed[buttonIndex(button)]) {
     return true;
@@ -628,6 +629,11 @@ bool MappedInputManager::wasPressed(const Button button) const {
 }
 
 bool MappedInputManager::wasReleased(const Button button) const {
+  const size_t injectedIndex = static_cast<size_t>(button);
+  if (injectedReleased[injectedIndex]) {
+    injectedReleased[injectedIndex] = false;
+    return true;
+  }
 #ifdef SIMULATOR
   if (simulatorReleased[buttonIndex(button)]) {
     return true;
@@ -706,6 +712,7 @@ bool MappedInputManager::wasReleased(const Button button) const {
 }
 
 bool MappedInputManager::isPressed(const Button button) const {
+  if (injectedReleased[static_cast<size_t>(button)]) return false;
 #ifdef SIMULATOR
   if (simulatorHeld[buttonIndex(button)]) {
     return true;
@@ -730,6 +737,9 @@ bool MappedInputManager::isPressed(const Button button) const {
 }
 
 bool MappedInputManager::wasAnyPressed() const {
+  if (std::any_of(injectedReleased.begin(), injectedReleased.end(), [](const bool released) { return released; })) {
+    return false;
+  }
 #ifdef SIMULATOR
   if (std::any_of(simulatorPressed.begin(), simulatorPressed.end(), [](bool pressed) { return pressed; })) {
     return true;
@@ -745,6 +755,9 @@ bool MappedInputManager::wasAnyPressed() const {
 }
 
 bool MappedInputManager::wasAnyReleased() const {
+  if (std::any_of(injectedReleased.begin(), injectedReleased.end(), [](const bool released) { return released; })) {
+    return true;
+  }
 #ifdef SIMULATOR
   if (std::any_of(simulatorReleased.begin(), simulatorReleased.end(), [](bool released) { return released; })) {
     return true;
