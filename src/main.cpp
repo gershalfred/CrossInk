@@ -629,6 +629,8 @@ CrossPointSettings::SHORT_PWRBTN chordPowerAction(const ButtonShortcutController
       return Power::CREATE_CLIPPING;
     case Chord::LookupWord:
       return Power::LOOKUP_WORD;
+    case Chord::ToggleTiltPageTurn:
+      return Power::TOGGLE_TILT_PAGE_TURN;
     default:
       return Power::IGNORE;
   }

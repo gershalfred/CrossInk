@@ -32,6 +32,7 @@ class ButtonShortcutController {
     FileBrowser = 22,
     CreateClipping = 23,
     LookupWord = 24,
+    ToggleTiltPageTurn = 25,
   };
   enum class Event : uint8_t { None, QuickLockChanged, Screenshot, NextPage, PreviousPage, ConfiguredPowerAction };
   struct Result {

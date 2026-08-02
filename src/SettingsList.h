@@ -819,13 +819,15 @@ inline const std::vector<SettingInfo>& getBaseSettingsList() {
     // Only show tilt page turn settings when the active device has a supported IMU.
     if (halTiltSensor.isAvailable()) {
       for (auto& setting : v) {
-        if (setting.nameId == StrId::STR_SHORT_PWR_BTN || setting.nameId == StrId::STR_LONG_PRESS_ACTION ||
-            setting.nameId == StrId::STR_LONG_PRESS_MENU_ACTION ||
+        if (setting.nameId == StrId::STR_SHORT_PWR_BTN || setting.nameId == StrId::STR_POWER_BUTTON_CHORD ||
+            setting.nameId == StrId::STR_LONG_PRESS_ACTION || setting.nameId == StrId::STR_LONG_PRESS_MENU_ACTION ||
             setting.nameId == StrId::STR_LONG_PRESS_BACK_ACTION) {
-          const uint8_t rawValue =
-              setting.nameId == StrId::STR_LONG_PRESS_MENU_ACTION || setting.nameId == StrId::STR_LONG_PRESS_BACK_ACTION
-                  ? static_cast<uint8_t>(CrossPointSettings::LONG_MENU_TOGGLE_TILT_PAGE_TURN)
-                  : static_cast<uint8_t>(CrossPointSettings::TOGGLE_TILT_PAGE_TURN);
+          const uint8_t rawValue = setting.nameId == StrId::STR_POWER_BUTTON_CHORD
+                                       ? static_cast<uint8_t>(CrossPointSettings::CHORD_TOGGLE_TILT_PAGE_TURN)
+                                   : setting.nameId == StrId::STR_LONG_PRESS_MENU_ACTION ||
+                                           setting.nameId == StrId::STR_LONG_PRESS_BACK_ACTION
+                                       ? static_cast<uint8_t>(CrossPointSettings::LONG_MENU_TOGGLE_TILT_PAGE_TURN)
+                                       : static_cast<uint8_t>(CrossPointSettings::TOGGLE_TILT_PAGE_TURN);
           insertEnumOptionAfter(setting, StrId::STR_CYCLE_PAGE_TURN, StrId::STR_TILT_PAGE_TURN, rawValue);
         }
       }

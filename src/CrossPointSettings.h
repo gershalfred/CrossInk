@@ -260,6 +260,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     CHORD_FILE_BROWSER = 22,
     CHORD_CREATE_CLIPPING = 23,
     CHORD_LOOKUP_WORD = 24,
+    CHORD_TOGGLE_TILT_PAGE_TURN = 25,
     POWER_CHORD_ACTION_COUNT
   };
 

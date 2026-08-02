@@ -60,7 +60,7 @@ TEST(ButtonShortcutControllerTest, RoutesEveryExpandedPowerActionWithoutChanging
       Action::ForceRefresh,  Action::ToggleFont,     Action::ToggleGuideDots, Action::ToggleBionicReading,
       Action::CyclePageTurn, Action::SyncProgress,   Action::FileTransfer,    Action::CalibreWireless,
       Action::JoinNetwork,   Action::CreateHotspot,  Action::ToggleDarkMode,  Action::Footnotes,
-      Action::FileBrowser,   Action::CreateClipping, Action::LookupWord,
+      Action::FileBrowser,   Action::CreateClipping, Action::LookupWord,      Action::ToggleTiltPageTurn,
   };
 
   for (const auto action : actions) {
