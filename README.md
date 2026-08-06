@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **Gersh Edition downstream:** this branch carries unofficial XTEINK X3/X4 modifications on top of official [`uxjulia/CrossInk`](https://github.com/uxjulia/CrossInk), including Quick Lock and configurable Power + Right. Read [GERSH_EDITION.md](./GERSH_EDITION.md) and each release's validation status before flashing.
+
 > **This is a personal fork of [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader)** with a focus on improved fonts and minimal reading stats.
 
 ## What's different in this fork
