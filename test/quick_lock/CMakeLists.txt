@@ -1,0 +1,3 @@
+add_executable(quick_lock_tests QuickLockStateTest.cpp)
+target_link_libraries(quick_lock_tests PRIVATE crosspoint_test_common GTest::gtest_main)
+gtest_discover_tests(quick_lock_tests)

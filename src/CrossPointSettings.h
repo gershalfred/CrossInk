@@ -229,7 +229,38 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     CREATE_HOTSPOT = 20,
     CREATE_CLIPPING = 21,
     LOOKUP_WORD = 22,
+    QUICK_LOCK = 23,
     SHORT_PWRBTN_COUNT
+  };
+
+  // Power + right-side button actions. Persisted values are append-only.
+  enum POWER_CHORD_ACTION {
+    CHORD_SCREENSHOT = 0,
+    CHORD_QUICK_LOCK = 1,
+    CHORD_NEXT_PAGE = 2,
+    CHORD_PREVIOUS_PAGE = 3,
+    CHORD_DISABLED = 4,
+    CHORD_SLEEP = 5,
+    CHORD_PAGE_TURN = 6,
+    CHORD_TOGGLE_BOOKMARK = 7,
+    CHORD_READING_STATS = 8,
+    CHORD_MARK_FINISHED = 9,
+    CHORD_FORCE_REFRESH = 10,
+    CHORD_TOGGLE_FONT = 11,
+    CHORD_TOGGLE_GUIDE_DOTS = 12,
+    CHORD_TOGGLE_BIONIC_READING = 13,
+    CHORD_CYCLE_PAGE_TURN = 14,
+    CHORD_SYNC_PROGRESS = 15,
+    CHORD_FILE_TRANSFER = 16,
+    CHORD_CALIBRE_WIRELESS = 17,
+    CHORD_JOIN_NETWORK = 18,
+    CHORD_CREATE_HOTSPOT = 19,
+    CHORD_TOGGLE_DARK_MODE = 20,
+    CHORD_FOOTNOTES = 21,
+    CHORD_FILE_BROWSER = 22,
+    CHORD_CREATE_CLIPPING = 23,
+    CHORD_LOOKUP_WORD = 24,
+    POWER_CHORD_ACTION_COUNT
   };
 
   // Hide battery percentage
@@ -363,6 +394,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t disableReaderTouchscreen = 0;
   // Short power button action behaviour
   uint8_t shortPwrBtn = IGNORE;
+  uint8_t powerChordAction = CHORD_SCREENSHOT;
   // Long power button action behaviour
   uint8_t longPwrBtn = SLEEP;
   // EPUB reading orientation settings
@@ -404,6 +436,11 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t paragraphAlignment = JUSTIFIED;
   // Auto-sleep timeout setting (default 10 minutes). Legacy sleepTimeout enum values are migration-only.
   uint8_t sleepTimeoutMinutes = 10;
+  // Quick Lock auto-sleep timeout: 1-30 minutes, or 31 for Never.
+  uint8_t quickLockSleepTimeoutMinutes = 5;
+  static constexpr uint8_t MIN_QUICK_LOCK_SLEEP_TIMEOUT_MINUTES = 1;
+  static constexpr uint8_t QUICK_LOCK_SLEEP_TIMEOUT_NEVER_MINUTES = 31;
+  static constexpr uint8_t MAX_QUICK_LOCK_SLEEP_TIMEOUT_MINUTES = QUICK_LOCK_SLEEP_TIMEOUT_NEVER_MINUTES;
   // E-ink refresh frequency (default 15 pages)
   uint8_t refreshFrequency = REFRESH_15;
   uint8_t hyphenationEnabled = 0;
@@ -614,6 +651,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
  public:
   float getReaderLineCompression() const;
   unsigned long getSleepTimeoutMs() const;
+  unsigned long getQuickLockSleepTimeoutMs() const;
   int getRefreshFrequency() const;
 };
 
